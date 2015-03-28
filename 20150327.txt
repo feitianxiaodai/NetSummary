@@ -1,0 +1,47 @@
+在Asp.net mvc中，有的时候需要比较复杂的html代码，以前我的思路是在后台拼接Html代码然后在前台输入展示，但是这样做的不好处为因为在后台书写是一个弱类型的，一旦有错误很难发现，同时如果要修改样式也是比较困难。因此找到一下的方法。
+/// <summary>
+        /// 
+        /// </summary>
+        /// <param name="context">控制器上下文</param>
+        /// <param name="viewPath">视图的虚拟路径</param>
+        /// <param name="model">传入的实体</param>
+        /// <param name="partial">是否是分部视图</param>
+        /// <returns></returns>
+        public static string RenderViewToString(ControllerContext context,
+            string viewPath,
+            object model = null,
+            bool partial = false)
+        {
+            // first find the ViewEngine for this view
+            ViewEngineResult viewEngineResult = null;
+            if (partial)
+                viewEngineResult = ViewEngines.Engines.FindPartialView(context, viewPath);
+            else
+                viewEngineResult = ViewEngines.Engines.FindView(context, viewPath, null);
+
+            if (viewEngineResult == null)
+                throw new FileNotFoundException("View cannot be found.");
+
+            // get the view and attach the model to view data
+            IView view = viewEngineResult.View;
+            context.Controller.ViewData.Model = model;
+
+            string result = null;
+
+            using (var sw = new StringWriter())
+            {
+                var ctx = new ViewContext(context, view,
+                    context.Controller.ViewData,
+                    context.Controller.TempData,
+                    sw);
+                view.Render(ctx, sw);
+                result = sw.ToString();
+            }
+
+            return result;
+      
+  }
+
+这个方法就是将使用的数据传到一个视图，然后在视图上书写html，最后将生成的html返回以准备处理。这样做的好处是视图中html是强类型的，出现错误的几率较低，同时如果修改样式的话，可以直接交给美工来解决。
+
+调用方式为：RenderViewToString(ControllerContext, "~/Views/Ordering/_DeliveryTimeSlotPart.cshtml", deliverySlot, true);
