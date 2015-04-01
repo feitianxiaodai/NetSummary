@@ -1,0 +1,41 @@
+1.在项目中有一个需求，就是有很多的房间放到下拉菜单中，但是房间的名字比较多，需要进行排序。开始的时候直接用linq中的orderby()方法，可以进行初步的排序，但是最终的排列还是不对。（得到的结果是例如：admin/admin3/admin123,但是正确的结果应该是admin/admin123/admin23），因此需要重写orderby()中的排序方法。
+public class OfficerComparter : IComparer<string>
+    {
+        public int Compare(string x, string y)
+        {
+            x = x.Trim();
+            y = y.Trim();
+            //string tempX = x.Trim();
+            //string tempY = y.Trim();
+            if (!Regex.IsMatch(x, "[0-9]+$") || !Regex.IsMatch(y, "[0-9]+$"))
+            {
+                return x.CompareTo(y);
+            }
+            else
+            {
+                Match xMatch = Regex.Match(x, "[0-9]+$");
+                string strXMatch = xMatch.Groups[0].ToString();
+                int xNum = Convert.ToInt32(strXMatch);
+
+                Match yMatch = Regex.Match(y, "[0-9]+$");
+                string strYMatch = yMatch.Groups[0].ToString();
+                int yNum = Convert.ToInt32(strYMatch);
+
+                string subXStr = x.Substring(0, x.Length - strXMatch.Length);
+                string subYStr = y.Substring(0, y.Length - strYMatch.Length);
+
+                if (subXStr.Equals(subYStr))
+                {
+                    return xNum - yNum;
+                }
+                else
+                {
+
+                    return x.CompareTo(y);
+                }
+
+            }
+
+        }
+    }
+重写IComparer<string>接口自己进行自定义排序。这样在调用的时候 oom.ToList().OrderBy(s => s.Name, new OfficerComparter())这样就可以自定义排序方式。
