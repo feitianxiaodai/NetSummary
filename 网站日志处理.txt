@@ -1,0 +1,76 @@
+在网站中需要日志处理，可以选择使用Log4Net等日志框架来处理。还可以采用手动写代码记录日志的方式实现。
+实现记录每天日志的记录情况。（根据日期每天分文件进行记录日志）
+
+1.Log帮助类进行日志记录。
+ public class LogHelper
+    {
+        private string _logPath;
+        public LogHelper(string logPath)
+        {
+            _logPath = logPath;
+            
+        }
+        public static  Queue<string> LogTextQueue=new Queue<string>();
+
+        /// <summary>
+        /// 写日志操作
+        /// </summary>
+        /// <param name="txt"></param>
+        public static  void WriteLog(string txt)
+        {
+            //现将log放在队列中
+            LogTextQueue.Enqueue(txt);            
+        }
+		///<summary>
+		///将日志记录从队列中读出并记录到记事本中
+		///</summary>
+        public void WriteLogToText(string logText)
+        {
+            string logpath = _logPath + DateTime.Now.ToString("yyyyMMdd").ToString() + ".txt";
+            ////如果没有文件就先 新建一个文件
+			///需要注意的问题： ///当如果没有存在该文件，那么就会新建一个文本文件，同时File流会占用当前文件的现成，因此，在写文件的StreamWriter流中写的时候，使用File的文件流，不要再重新使用///新的流来操作，否则的话该File文件流会一直占用着该文本文件，无法继续写入文本文件
+            if (!File.Exists(logpath))
+            {
+                var fileStream = File.Create(logpath);
+
+                using (StreamWriter sw = new StreamWriter(fileStream, Encoding.Default))
+                {
+                    sw.WriteLine(logText);
+                }
+            }
+            else
+            {
+                using (StreamWriter sw = new StreamWriter(logpath, true, Encoding.Default))
+                {
+                    sw.WriteLine(logText);
+                }
+            }
+
+        }
+    }
+	
+2.在Global.asax文件中 在application_start()方法中，生成日志的文件夹路径，然后调用写文件的线程来不停写日志。
+		string logPath = HttpContext.Current.Server.MapPath("~/Log/");
+		//程序一开始就进行记录日志操作
+		ReadAndWriteLog(logPath);
+		
+		private void ReadAndWriteLog(string logPath)
+        {
+            LogHelper logHelper=new LogHelper(logPath);
+            ThreadPool.QueueUserWorkItem(s =>
+            {
+                while (true)
+                {
+                    if (LogHelper.LogTextQueue.Count <= 0)
+                    {
+                        continue;
+                    }
+                    string str = LogHelper.LogTextQueue.Dequeue();
+                    //LogHelper logHelper=new LogHelper(logPath);
+                    logHelper.WriteLogToText(str);
+                    Thread.Sleep(30);
+                }
+            });
+        }
+		
+3.在程序中需要写日志的地方，只需要调用LogHelper.WriteLog('写入日志');方法即可。
