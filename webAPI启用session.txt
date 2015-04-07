@@ -1,0 +1,22 @@
+在asp.net WebApi中，默认是没有启用session功能的，如果在api中使用session则会报错，因此设置api中启用session的功能。
+在默认情况下是没有开启的。SessionStateBehavior有四个值：
+Default使用默认ASP.NET逻辑来确定请求的会话状态行为。默认逻辑是寻找IHttpHandler中是否存在标记会话状态接口。
+Disabled未启用会话状态来处理请求。 此设置将覆盖已通过检查请求的处理程序确定的任何会话行为。
+
+ReadOnly为请求启用只读会话状态。这意味着会话状态无法更新。此设置将覆盖已通过检查请求的处理程序确定的任何会话状态行为。
+
+Required为请求启用完全的读写会话状态行为。 此设置将覆盖已通过检查请求的处理程序确定的任何会话行为。
+
+启用方法：
+在Global中重写Init方法来指定会话需要支持的类型。
+public override void Init()
+        {
+            PostAuthenticateRequest += MvcApplication_PostAuthenticateRequest;
+            base.Init();
+        }
+
+        void MvcApplication_PostAuthenticateRequest(object sender, EventArgs e)
+        {
+            HttpContext.Current.SetSessionStateBehavior(
+                SessionStateBehavior.Required);
+        }
